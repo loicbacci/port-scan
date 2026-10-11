@@ -1,3 +1,6 @@
+use std::fmt;
+
+#[derive(Debug)]
 pub struct Question {
     entries: Vec<QuestionEntry>,
 }
@@ -19,6 +22,19 @@ impl Question {
     }
 }
 
+impl fmt::Display for Question {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        for (i, entry) in self.entries.iter().enumerate() {
+            if i > 0 {
+                f.write_str("\n")?;
+            }
+            write!(f, "{entry}")?;
+        }
+        Ok(())
+    }
+}
+
+#[derive(Debug)]
 struct QuestionEntry {
     /// The domain name
     qname: QNAME,
@@ -50,6 +66,13 @@ impl QuestionEntry {
     }
 }
 
+impl fmt::Display for QuestionEntry {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{} {:?} {:?}", self.qname, self.qtype, self.qclass)
+    }
+}
+
+#[derive(Debug)]
 struct QNAME {
     /// Each label of the domain name
     labels: Vec<Label>,
@@ -75,16 +98,35 @@ impl QNAME {
     }
 }
 
+impl fmt::Display for QNAME {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        for (i, label) in self.labels.iter().enumerate() {
+            if i != 0 {
+                f.write_str(".")?;
+            }
+
+            label.fmt(f)?;
+        }
+
+        Ok(())
+    }
+}
+
+#[derive(Debug)]
 struct Label {
     /// The letters of the label
     letters: Vec<u8>,
 }
 
 impl Label {
-    fn new(label_str: &str) -> Label {
-        let bytes: Vec<u8> = label_str.as_bytes().to_vec();
+    fn new(label_str: &str) -> Self {
+        Self::from_bytes(label_str.as_bytes())
+    }
 
-        Label { letters: bytes }
+    fn from_bytes(bytes: &[u8]) -> Self {
+        Label {
+            letters: bytes.to_vec(),
+        }
     }
 
     fn write_to_buf(&self, buf: &mut Vec<u8>) {
@@ -93,7 +135,13 @@ impl Label {
     }
 }
 
-#[derive(Copy, Clone)]
+impl fmt::Display for Label {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.letters.escape_ascii())
+    }
+}
+
+#[derive(Copy, Clone, Debug)]
 pub enum QTYPE {
     /// Host address
     A = 1,
@@ -138,7 +186,7 @@ pub enum QTYPE {
     STAR = 255,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub enum QCLASS {
     /// The internet
     IN = 1,
@@ -151,4 +199,62 @@ pub enum QCLASS {
 
     /// Any class
     STAR = 255,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_qname_write_to_buf() {
+        let dn = "test.abc";
+        let qname = QNAME::new(dn);
+
+        let exp = b"\x04test\x03abc\x00";
+        let mut buf: Vec<u8> = vec![];
+        qname.write_to_buf(&mut buf);
+
+        assert_eq!(exp.as_slice(), buf.as_slice());
+    }
+
+    #[test]
+    fn test_qname_display() {
+        let dn = "test.abc";
+        let qname = QNAME::new(dn);
+        let qname_str = qname.to_string();
+
+        assert_eq!(dn.to_string(), qname_str);
+    }
+
+    #[test]
+    fn test_label_write_to_buf() {
+        let dn = "test";
+        let label = Label::new(dn);
+
+        let exp = b"\x04test";
+        let mut buf: Vec<u8> = vec![];
+        label.write_to_buf(&mut buf);
+
+        assert_eq!(exp.as_slice(), buf.as_slice());
+    }
+
+    #[test]
+    fn test_label_display() {
+        let dn = "test";
+        let label = Label::new(dn);
+        let label_str = label.to_string();
+
+        assert_eq!(dn.to_string(), label_str);
+    }
+
+    #[test]
+    fn test_label_display_arbitrary_bytes() {
+        let dn = b"\x01\x02\x03\x04";
+        let label = Label {
+            letters: dn.to_vec(),
+        };
+        let label_str = label.to_string();
+
+        assert_eq!("\\x01\\x02\\x03\\x04", label_str);
+    }
 }

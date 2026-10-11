@@ -4,9 +4,10 @@ use clap::Args;
 
 use crate::dns::{header::Header, question::Question};
 
-mod header;
-mod question;
+pub mod header;
+pub mod question;
 mod misc;
+pub mod resource_record;
 
 #[derive(Args)]
 pub struct DnsArgs {

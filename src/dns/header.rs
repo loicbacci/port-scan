@@ -1,4 +1,5 @@
 /// Header of a DNS message.
+#[derive(Debug)]
 pub struct Header {
     /// (16-bit) Identifier of the message (to help match replies)
     id: u16,
@@ -47,6 +48,7 @@ impl Header {
 
 /// List of flags for the DNS message header.
 /// Fits into 16 bits
+#[derive(Debug)]
 pub struct HeaderFlags {
     /// (1-bit) Query or reponse
     qr: QR,
@@ -109,20 +111,20 @@ impl HeaderFlags {
 }
 
 // ============ ENUMS ================
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub enum QR {
     Query = 0,
     Response = 1,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub enum OPCODE {
     Query = 0,
     InverseQuery = 1,
     Status = 2,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub enum RCODE {
     Success = 0,
     /// Was unable to interpret query
